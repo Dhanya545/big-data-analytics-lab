@@ -1,4 +1,5 @@
 services:
+
   mongodb:
     image: mongo:latest
     container_name: mongodb_lab
@@ -8,68 +9,89 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+
   hadoop-master:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
     restart: unless-stopped
+
     environment:
       - CLUSTER_NAME=test
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
       - HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check=false
+
     ports:
       - "9870:9870"
       - "9000:9000"
+
     volumes:
       - namenode_data:/hadoop/dfs/name
+
 
   datanode:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode
     restart: unless-stopped
+
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-      - HDFS_CONF_dfs_datanode_use_datanode_hostname=true
+      - HDFS_CONF_dfs_datanode_use_datanode_hostname=false
+      - HDFS_CONF_dfs_datanode_hostname=datanode
       - SERVICE_PRECONDITION=namenode:9870
+
     depends_on:
       - hadoop-master
+
     volumes:
       - datanode_data:/hadoop/dfs/data
+
 
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
     container_name: resourcemanager
     restart: unless-stopped
+
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
       - SERVICE_PRECONDITION=namenode:9870,datanode:9864
+
     depends_on:
       - hadoop-master
       - datanode
+
 
   nodemanager:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
     container_name: nodemanager
     restart: unless-stopped
+
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
       - SERVICE_PRECONDITION=resourcemanager:8088
+
     depends_on:
       - resourcemanager
+
 
   hive-server:
     image: bde2020/hive:2.3.2-postgresql-metastore
     container_name: hive_server
     restart: unless-stopped
+
     depends_on:
       - hadoop-master
       - datanode
+
     ports:
       - "10000:10000"
       - "10002:10002"
+
     environment:
       - SERVICE_PRECONDITION=namenode:9870,datanode:9864
+
     volumes:
       - hive_data:/opt/hive
+
 
 volumes:
   mongodb_data:
